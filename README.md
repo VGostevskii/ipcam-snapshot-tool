@@ -1,4 +1,3 @@
-```
 # IPCam Snapshot Tool
 
 A robust tool designed to capture snapshots from multiple IP cameras at regular intervals and log any issues to a Zabbix server.
@@ -106,4 +105,3 @@ Errors will be logged to the path specified in `config.txt`. Ensure the director
 ## Contributing
 
 If you find any issues or have suggestions for improvements, please open an issue or submit a pull request.
-```
