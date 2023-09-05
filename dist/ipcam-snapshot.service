@@ -1,0 +1,12 @@
+[Unit]
+Description=IPCam Snapshot Tool Service
+After=network.target
+
+[Service]
+ExecStart=/path/to/ipcam-snapshot-tool/src/snapshots_capture.sh /path/to/ipcam-snapshot-tool/config/config.txt
+Restart=always
+User=your_username
+Group=your_groupname
+
+[Install]
+WantedBy=multi-user.target

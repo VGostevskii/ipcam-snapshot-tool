@@ -1,0 +1,2 @@
+# Ignore actual configuration with sensitive data
+config/config.txt

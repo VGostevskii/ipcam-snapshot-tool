@@ -1,0 +1,17 @@
+# IPCam Snapshot Tool Configuration Template
+
+# Root folder where snapshots will be saved
+ROOT_FOLDER=/path/to/save/snapshots
+
+# Cameras settings file path
+CAM_SETTINGS=/path/to/ipcam-snapshot-tool/config/cameras_settings.txt
+
+# Log file path
+LOG_FILE=/path/to/log/file.log
+
+# Zabbix server details
+YOUR_HOSTNAME=your_zabbix_agent_hostname
+ZABBIX_SERVER_IP=your_zabbix_server_ip
+
+# Interval for taking snapshots (in seconds)
+SNAPSHOT_INTERVAL=60
