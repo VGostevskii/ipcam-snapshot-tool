@@ -8,6 +8,7 @@ fi
 
 # Source the configuration file to get the required variables
 source "$1"
+echo "ROOT_FOLDER is: $ROOT_FOLDER"
 
 # Declare an associative array to store camera details
 declare -A SNAPSHOT_ENDPOINTS
@@ -20,8 +21,13 @@ TIMEOUT_LOCK="/tmp/camera_timeout.lock"
 # Read the file line by line and extract the IP, login, and password
 # Construct a camera name based on the IP (by replacing dots with underscores)
 while IFS=: read -r cam_name snapshot_url; do
+    echo $snapshot_url
     SNAPSHOT_ENDPOINTS["$cam_name"]="$snapshot_url"
 done < $CAMS_CONFIG
+
+for key in "${!SNAPSHOT_ENDPOINTS[@]}"; do
+    echo "$key -> ${SNAPSHOT_ENDPOINTS[$key]}"
+done
 
 # Function to log errors
 log_error() {
@@ -32,25 +38,23 @@ log_error() {
         # Log the error message with a timestamp
         echo "$(date +"%Y-%m-%d %H:%M:%S") - $message" >> $LOG_FILE
         # Send the error to Zabbix server
-        zabbix_sender -z $ZABBIX_SERVER_IP -s "$YOUR_HOSTNAME" -k camera_snapshot -o "$message"
+        zabbix_sender -z $ZABBIX_SERVER_IP -s "$HOSTNAME" -k camera_snapshot -o "$message"
     ) 200>$TIMEOUT_LOCK
 }
+export -f log_error
 
 # Function to take a snapshot from a camera
 take_snapshot() {
     CAM_NAME=$1
-    SNAPSHOT_ENDPOINT="${SNAPSHOT_ENDPOINTS[$CAM_NAME]}"
-    DATE=$(date +"%Y-%m-%d_%H-%M-%S")
-    DIR="${ROOT_FOLDER}/${CAM_NAME}/${DATE}"
-    SNAP_NAME="${CAM_NAME}_${DATE}.jpg"
-
-    mkdir -p "$DIR"
+    SNAPSHOT_ENDPOINT=$2
+    SAVE_PATH=$3
     # Try to get the snapshot using curl
     # If it fails, log the error
-    if ! curl --max-time 10 -o "${DIR}/${SNAP_NAME}" "$CAM_URL"; then
-        log_error "Failed to take snapshot for $CAM_NAME"
+    if ! curl --max-time 10 -o "$SAVE_PATH" "$SNAPSHOT_ENDPOINT"; then
+        echo "Failed to take snapshot for $CAM_NAME"
     fi
 }
+export -f take_snapshot
 
 # Main loop to continuously take snapshots
 
@@ -59,24 +63,23 @@ current_time=$(date +%s)
 sleep_duration=$((SNAPSHOT_INTERVAL - current_time % SNAPSHOT_INTERVAL))
 
 # Sleep until the next even interval
-sleep $sleep_duration
+#sleep $sleep_duration
 
 while true; do
     START_TIME=$(date +%s)
-
     # For each camera, try to take a snapshot
     # If the snapshot process takes more than 15 seconds, check for a timeout
-    for CAM_NAME in "${!CAMS[@]}"; do
-        timeout 15s bash -c "take_snapshot $CAM_NAME"
-        
-        # Check the exit status of timeout
-        if [ $? -eq 124 ]; then
-            # Check if the log_error lock is held
-            if ! flock -n 300; then
-                log_error "Timeout reached for $CAM_NAME"
-            fi
-        fi
-    done &  # This runs all the camera snapshot processes concurrently
+    for CAM_NAME in "${!SNAPSHOT_ENDPOINTS[@]}"; do
+        # timeout 15s bash -c "take_snapshot $CAM_NAME"
+        SNAPSHOT_ENDPOINT="${SNAPSHOT_ENDPOINTS[$CAM_NAME]}"
+        DATE=$(date +"%Y-%m-%d_%H-%M-%S")
+        DIR="${ROOT_FOLDER}/${CAM_NAME}/${DATE}"
+        mkdir -p "$DIR"
+        SNAP_NAME="${CAM_NAME}_${DATE}.jpg"
+        SAVE_PATH="${DIR}/${SNAP_NAME}"
+        timeout 15s bash -c "take_snapshot $CAM_NAME $SNAPSHOT_ENDPOINT $SAVE_PATH" &
+    done  # This runs all the camera snapshot processes concurrently
+    wait
 
     # Calculate the elapsed time and determine how long to sleep before the next iteration
     END_TIME=$(date +%s)
