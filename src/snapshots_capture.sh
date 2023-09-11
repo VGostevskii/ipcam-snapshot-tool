@@ -10,7 +10,8 @@ fi
 source "$1"
 
 # Declare an associative array to store camera details
-declare -A CAMS
+declare -A SNAPSHOT_ENDPOINTS
+
 
 # Define a lock file for timeout checks
 TIMEOUT_LOCK="/tmp/camera_timeout.lock"
@@ -18,11 +19,9 @@ TIMEOUT_LOCK="/tmp/camera_timeout.lock"
 # Load camera settings from the text file
 # Read the file line by line and extract the IP, login, and password
 # Construct a camera name based on the IP (by replacing dots with underscores)
-while IFS=: read -r cam_name ip login password; do
-    # CAM_NAME=$"cam_${ip//./_}"
-    CAM_NAME=$cam_name
-    CAMS["$CAM_NAME"]="$ip:$login:$password"
-done < $CAM_SETTINGS
+while IFS=: read -r cam_name snapshot_url; do
+    SNAPSHOT_ENDPOINTS["$cam_name"]="$snapshot_url"
+done < $CAMS_CONFIG
 
 # Function to log errors
 log_error() {
@@ -40,10 +39,7 @@ log_error() {
 # Function to take a snapshot from a camera
 take_snapshot() {
     CAM_NAME=$1
-    IP=$(echo "${CAMS[$CAM_NAME]}" | cut -d':' -f1)
-    LOGIN=$(echo "${CAMS[$CAM_NAME]}" | cut -d':' -f2)
-    PASSWORD=$(echo "${CAMS[$CAM_NAME]}" | cut -d':' -f3)
-
+    SNAPSHOT_ENDPOINT="${SNAPSHOT_ENDPOINTS[$CAM_NAME]}"
     DATE=$(date +"%Y-%m-%d_%H-%M-%S")
     DIR="${ROOT_FOLDER}/${CAM_NAME}/${DATE}"
     SNAP_NAME="${CAM_NAME}_${DATE}.jpg"
@@ -51,7 +47,7 @@ take_snapshot() {
     mkdir -p "$DIR"
     # Try to get the snapshot using curl
     # If it fails, log the error
-    if ! curl --max-time 10 -o "${DIR}/${SNAP_NAME}" "http://${LOGIN}:${PASSWORD}@${IP}:80/GetSnapshot/0"; then
+    if ! curl --max-time 10 -o "${DIR}/${SNAP_NAME}" "$CAM_URL"; then
         log_error "Failed to take snapshot for $CAM_NAME"
     fi
 }
