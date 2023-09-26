@@ -1,3 +1,17 @@
 # Ignore actual configuration with sensitive data
 config/config.txt
 config/cameras_config.txt
+config/config.yaml
+
+#
+snapshots
+
+.venv
+venv
+
+*.log
+
+*.pyc
+*.swp
+*.swc
+*.tmp
