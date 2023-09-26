@@ -9,6 +9,9 @@ fi
 # Source the configuration file to get the required variables
 source "$1"
 echo "ROOT_FOLDER is: $ROOT_FOLDER"
+echo "Run snapshots capture at $date with conf: " >> $LOG_FILE
+echo "$1" >> LOG_FILE
+cat "$1" >> $LOG_FILE
 
 # Declare an associative array to store camera details
 declare -A SNAPSHOT_ENDPOINTS
@@ -21,12 +24,12 @@ TIMEOUT_LOCK="/tmp/camera_timeout.lock"
 # Read the file line by line and extract the IP, login, and password
 # Construct a camera name based on the IP (by replacing dots with underscores)
 while IFS=: read -r cam_name snapshot_url; do
-    echo $snapshot_url
     SNAPSHOT_ENDPOINTS["$cam_name"]="$snapshot_url"
 done < $CAMS_CONFIG
 
 for key in "${!SNAPSHOT_ENDPOINTS[@]}"; do
     echo "$key -> ${SNAPSHOT_ENDPOINTS[$key]}"
+    echo "$key -> ${SNAPSHOT_ENDPOINTS[$key]}" >> $LOG_FILE
 done
 
 # Function to log errors
@@ -48,10 +51,25 @@ take_snapshot() {
     CAM_NAME=$1
     SNAPSHOT_ENDPOINT=$2
     SAVE_PATH=$3
-    # Try to get the snapshot using curl
-    # If it fails, log the error
-    if ! curl --max-time 10 -o "$SAVE_PATH" "$SNAPSHOT_ENDPOINT"; then
-        echo "Failed to take snapshot for $CAM_NAME"
+
+    # Use a temporary file to store the output initially
+    TEMP_FILE=$(mktemp)
+
+    # Try to get the snapshot using curl and capture the HTTP status code
+    HTTP_CODE=$(curl --max-time 10 -o "$TEMP_FILE" -s -w "%{http_code}" "$SNAPSHOT_ENDPOINT")
+
+    # Check the HTTP status code
+    if [ "$HTTP_CODE" == "200" ]; then
+        # If the status is 200, move the temporary file to the desired location
+        mv "$TEMP_FILE" "$SAVE_PATH"
+    else
+        # Remove the temporary file if the status is not 200
+        rm "$TEMP_FILE"
+        if [ "$HTTP_CODE" == "401" ]; then
+            log_error "Unauthorized access for $CAM_NAME. HTTP Status: $HTTP_CODE"
+        else
+            log_error "Failed to take snapshot for $CAM_NAME. HTTP Status: $HTTP_CODE"
+        fi
     fi
 }
 export -f take_snapshot
@@ -63,7 +81,7 @@ current_time=$(date +%s)
 sleep_duration=$((SNAPSHOT_INTERVAL - current_time % SNAPSHOT_INTERVAL))
 
 # Sleep until the next even interval
-#sleep $sleep_duration
+sleep $sleep_duration
 
 while true; do
     START_TIME=$(date +%s)
@@ -72,10 +90,11 @@ while true; do
     for CAM_NAME in "${!SNAPSHOT_ENDPOINTS[@]}"; do
         # timeout 15s bash -c "take_snapshot $CAM_NAME"
         SNAPSHOT_ENDPOINT="${SNAPSHOT_ENDPOINTS[$CAM_NAME]}"
-        DATE=$(date +"%Y-%m-%d_%H-%M-%S")
+        DATE=$(date +"%Y-%m-%d")
+        DATETIME=$(date +"%Y-%m-%d_%H-%M-%S")
         DIR="${ROOT_FOLDER}/${CAM_NAME}/${DATE}"
         mkdir -p "$DIR"
-        SNAP_NAME="${CAM_NAME}_${DATE}.jpg"
+        SNAP_NAME="${CAM_NAME}_${DATETIME}.jpg"
         SAVE_PATH="${DIR}/${SNAP_NAME}"
         timeout 15s bash -c "take_snapshot $CAM_NAME $SNAPSHOT_ENDPOINT $SAVE_PATH" &
     done  # This runs all the camera snapshot processes concurrently
