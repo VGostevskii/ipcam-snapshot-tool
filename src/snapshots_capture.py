@@ -9,6 +9,7 @@ from types import FrameType
 
 import yaml
 import requests
+from requests.auth import HTTPDigestAuth
 
 
 def load_config(yaml_file: Path) -> dict:
@@ -29,18 +30,19 @@ def load_cameras_config(config_file: Path) -> dict[str, dict[str, str]]:
         for line in lines:
             if line.strip().startswith('#'):
                 continue
-            parts = line.strip().split(':', 3)
+            parts = line.strip().split(':', 4)
             cam_name = parts[0]
             login = parts[1]
             password = parts[2]
-            url = parts[3]
-            cam_configs[cam_name] = {'login': login, 'password': password, 'url': url}
+            auth_type = parts[3]
+            url = parts[4]
+            cam_configs[cam_name] = {'login': login, 'password': password, 'url': url, 'auth_type': auth_type}
 
         return cam_configs
         return {line.strip().split(':', 1)[0]: line.strip().split(':', 1)[1] for line in file}
 
 
-def take_snapshot(cam_name: str, login: str, password: str, snapshot_url: str) -> None:
+def take_snapshot(cam_name: str, login: str, password: str, auth_type: str, snapshot_url: str) -> None:
     date = datetime.utcnow().strftime('%Y-%m-%d')
     datetime_str = datetime.utcnow().strftime('%Y-%m-%d_%H-%M-%S')
     dir_path = STORAGE_BASE_FOLDER / cam_name / date
@@ -48,7 +50,13 @@ def take_snapshot(cam_name: str, login: str, password: str, snapshot_url: str) -
     save_path = dir_path / f"{cam_name}_{datetime_str}.jpg"
 
     try:
-        response = requests.get(snapshot_url, timeout=TIMEOUT, auth=(login, password))
+        if auth_type == 'basic':
+            auth = (login, password)
+        elif auth_type == 'digest':
+            auth = HTTPDigestAuth(login, password)
+        else:
+            raise ValueError('auth type must be "basic" or "digest"')
+        response = requests.get(snapshot_url, timeout=TIMEOUT, auth=auth)
         response.raise_for_status()
 
         with save_path.open('wb') as file:
@@ -107,7 +115,8 @@ if __name__ == '__main__':
                 login = endpoint_params['login']
                 password = endpoint_params['password']
                 url = endpoint_params['url']
-                futures.append(executor.submit(take_snapshot, cam_name, login, password, url))
+                auth_type = endpoint_params['auth_type']
+                futures.append(executor.submit(take_snapshot, cam_name, login, password, auth_type, url))
             for future in futures:
                 future.result()  # it takes between 0 and TIMEOUT seconds
 
