@@ -51,6 +51,12 @@ def take_snapshot(cam_name: str, snapshot_url: str) -> None:
         logging.error(f"Error capturing snapshot for {cam_name}: {e}")
 
 
+def sleep_until_next_even_moment(interval: int) -> None:
+    now = datetime.utcnow()
+    seconds_until_next_moment = interval - now.second
+    time.sleep(seconds_until_next_moment)
+
+
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description="Camera Snapshot Tool")
@@ -80,6 +86,7 @@ if __name__ == '__main__':
     logging.info('Start loop...')
     running = True
     while running:
+        sleep_until_next_even_moment(SNAPSHOT_INTERVAL)
         start_time = time.time()
         with ThreadPoolExecutor() as executor:
             futures = [executor.submit(take_snapshot, cam_name, url) for cam_name, url in CAMERAS_CONFIG.items()]
@@ -87,8 +94,9 @@ if __name__ == '__main__':
                 future.result()  # it takes between 0 and TIMEOUT seconds
 
             elapsed_time = time.time() - start_time
-            sleep_time = SNAPSHOT_INTERVAL - elapsed_time
-            if running and sleep_time > 0:
-                time.sleep(sleep_time)
+            if elapsed_time > SNAPSHOT_INTERVAL:
+                msg = f'Taking snapshots takes {elapsed_time} \
+                    that is more then snapshot interval = {SNAPSHOT_INTERVAL}'
+                logging.warning(msg)
 
     logging.info("Script terminated gracefully.")
