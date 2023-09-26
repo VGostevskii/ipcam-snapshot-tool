@@ -16,18 +16,31 @@ def load_config(yaml_file: Path) -> dict:
         return yaml.safe_load(file)
 
 
-def signal_handler(signum: int, frame: 'FrameType') -> None:
+def signal_handler(signum: int, frame: FrameType) -> None:
     global running
     running = False
     logging.info("Signal received. Shutting down gracefully...")
 
 
-def load_camera_config(config_file: Path) -> dict[str, str]:
+def load_cameras_config(config_file: Path) -> dict[str, dict[str, str]]:
     with config_file.open('r') as file:
+        lines = file.readlines()
+        cam_configs = {}
+        for line in lines:
+            if line.strip().startswith('#'):
+                continue
+            parts = line.strip().split(':', 3)
+            cam_name = parts[0]
+            login = parts[1]
+            password = parts[2]
+            url = parts[3]
+            cam_configs[cam_name] = {'login': login, 'password': password, 'url': url}
+
+        return cam_configs
         return {line.strip().split(':', 1)[0]: line.strip().split(':', 1)[1] for line in file}
 
 
-def take_snapshot(cam_name: str, snapshot_url: str) -> None:
+def take_snapshot(cam_name: str, login: str, password: str, snapshot_url: str) -> None:
     date = datetime.utcnow().strftime('%Y-%m-%d')
     datetime_str = datetime.utcnow().strftime('%Y-%m-%d_%H-%M-%S')
     dir_path = STORAGE_BASE_FOLDER / cam_name / date
@@ -35,7 +48,7 @@ def take_snapshot(cam_name: str, snapshot_url: str) -> None:
     save_path = dir_path / f"{cam_name}_{datetime_str}.jpg"
 
     try:
-        response = requests.get(snapshot_url, timeout=TIMEOUT)
+        response = requests.get(snapshot_url, timeout=TIMEOUT, auth=(login, password))
         response.raise_for_status()
 
         with save_path.open('wb') as file:
@@ -80,7 +93,7 @@ if __name__ == '__main__':
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
-    CAMERAS_CONFIG = load_camera_config(CAMS_CONFIG_FILE)
+    CAMERAS_CONFIG = load_cameras_config(CAMS_CONFIG_FILE)
 
     # Main loop
     logging.info('Start loop...')
@@ -89,7 +102,12 @@ if __name__ == '__main__':
         sleep_until_next_even_moment(SNAPSHOT_INTERVAL)
         start_time = time.time()
         with ThreadPoolExecutor() as executor:
-            futures = [executor.submit(take_snapshot, cam_name, url) for cam_name, url in CAMERAS_CONFIG.items()]
+            futures = []
+            for cam_name, endpoint_params in CAMERAS_CONFIG.items():
+                login = endpoint_params['login']
+                password = endpoint_params['password']
+                url = endpoint_params['url']
+                futures.append(executor.submit(take_snapshot, cam_name, login, password, url))
             for future in futures:
                 future.result()  # it takes between 0 and TIMEOUT seconds
 

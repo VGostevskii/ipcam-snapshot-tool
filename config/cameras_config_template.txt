@@ -1,2 +1,2 @@
-custom_name1:http://login1:password1@ip1/GetSnapshot/0
-custom_name2:http://login2:password2@ip2/ISAPI/Streaming/channels/101/picture?snapShotImageType=JPEG
+custom_name1:login1:password1:http://ip1/GetSnapshot/0
+custom_name2:login1:password1:http://ip2/ISAPI/Streaming/channels/101/picture?snapShotImageType=JPEG
