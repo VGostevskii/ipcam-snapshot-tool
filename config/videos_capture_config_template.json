@@ -1,12 +1,12 @@
 {
   "CamsConfig": [
     {
-      "cam": "camera_1",
+      "cam_name": "camera_1",
       "rtsp_url": "rtsp_url_1",
       "save_path": "/path/to/save_1"
     },
     {
-      "cam": "camera_2",
+      "cam_name": "camera_2",
       "rtsp_url": "rtsp_url_2",
       "save_path": "/path/to/save_2"
     },
@@ -19,7 +19,7 @@
 
   "Settings": {
     "segment_time": 3600,
-    "sleep_time",
+    "sleep_time": 10,
     "log_path": "camera_recording.log"
   }
 }
