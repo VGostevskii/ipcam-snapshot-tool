@@ -77,6 +77,12 @@ Errors will be logged to the path specified in `config.txt`. Ensure the director
 - Check the log file for any errors or issues.
 - If using Zabbix, ensure the Zabbix agent and `zabbix_sender` are correctly configured.
 
+## TODO List
+
+- [ ] Do naming improvments
+- [ ] Remove bash and zabbix (as there are python with logging and zabbix log parser independet)
+- [ ] Clear README.md
+
 ## Contributing
 
 If you find any issues or have suggestions for improvements, please open an issue or submit a pull request.
