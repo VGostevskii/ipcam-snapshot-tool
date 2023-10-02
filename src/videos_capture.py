@@ -57,9 +57,9 @@ def signal_handler(signum: int, frame: FrameType) -> None:
             # Handle the process as needed, e.g., forcefully terminate it or perform other actions
 
 
-def hide_rtsp_url(text: str, replace_with: str = '[HIDED_URL] ') -> str:
-    rtsp_pattern = r'rtsp://[^\s]*\s'
-    redacted = re.sub(rtsp_pattern, replace_with, text)
+def hide_url(text: str, replace_with: str = '[HIDED_URL] ') -> str:
+    protocol_pattern = r'(rtsp://|http://|https://|tcp://|udp://|ftp://)(\S*?)(\s|$)'
+    redacted = re.sub(protocol_pattern, rf'\1{replace_with}', text)
     return redacted
 
 
@@ -117,7 +117,7 @@ if __name__ == '__main__':
                 stderr_output = process.stderr.read().decode('utf-8')
                 if return_code != 0:
                     stderr_output = stderr_output.replace(rtsp_url, 'HIDED_URL')
-                    stderr_output = hide_rtsp_url(stderr_output)
+                    stderr_output = hide_url(stderr_output)
                     logging.error((f"Process for {cam_name} terminated with code {return_code}."
                                    f"FFmpeg Error Output:\n{stderr_output}"))
                 else:
