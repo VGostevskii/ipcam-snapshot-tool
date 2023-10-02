@@ -1,9 +1,0 @@
-[Settings]
-segment_time = 60
-log_path = /path/to/logfile.log
-
-[CommandParams]
-rtsp_url_1 = /path/to/save_1
-rtsp_url_2 = /path/to/save_2
-; ... and so on
-

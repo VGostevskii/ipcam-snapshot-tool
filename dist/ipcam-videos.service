@@ -1,9 +1,10 @@
 [Unit]
-Description=Camera RTSP Recording Service
+Description=Cameras RTSP Recording Service
 
 [Service]
-ExecStart=/usr/bin/python3 /path/to/camera_service.py /path/to/config.ini
+ExecStart=/path/to/python /path/to/camera_service.py /path/to/config.json
 Restart=always
+TimeoutSec=100
 User=username
 Group=groupname
 Environment=PYTHONUNBUFFERED=1
