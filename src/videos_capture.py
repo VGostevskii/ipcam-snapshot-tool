@@ -116,13 +116,13 @@ if __name__ == '__main__':
             if return_code is not None:  # process has terminated
                 stderr_output = process.stderr.read().decode('utf-8')
                 if return_code != 0:
-                    stderr_output = stderr_output.replace('rtsp_url', 'HIDED_URL')
+                    stderr_output = stderr_output.replace(rtsp_url, 'HIDED_URL')
                     stderr_output = hide_rtsp_url(stderr_output)
                     logging.error((f"Process for {cam_name} terminated with code {return_code}."
                                    f"FFmpeg Error Output:\n{stderr_output}"))
                 else:
                     logging.info(f"Process for {cam_name} has terminated gracefully.")
-                proocess = start_process(rtsp_url, save_path, SEGMENT_TIME)  # Restart the process
+                process = start_process(rtsp_url, save_path, SEGMENT_TIME)  # Restart the process
                 processes[idx] = (process, cam_name, rtsp_url, save_path)
         time.sleep(SLEEP_TIME)
 
