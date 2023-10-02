@@ -1,0 +1,12 @@
+[Unit]
+Description=Camera RTSP Recording Service
+
+[Service]
+ExecStart=/usr/bin/python3 /path/to/camera_service.py /path/to/config.ini
+Restart=always
+User=username
+Group=groupname
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target
