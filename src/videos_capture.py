@@ -1,4 +1,5 @@
 import argparse
+import datetime
 import json
 import logging
 import re
@@ -7,6 +8,7 @@ import subprocess
 import time
 import os
 
+from pathlib import Path
 from types import FrameType
 
 
@@ -63,7 +65,24 @@ def hide_url(text: str, replace_with: str = '[HIDED_URL] ') -> str:
     return redacted
 
 
+def create_utc_datetime_dirs(path_pattern: str) -> None:
+    """
+    Create a directoris based on path pattern with passed current and next day dates
+    Args:
+        path_pattern (str): The path pattern with datetime placeholders.
+    """
+    current_utc_datetime = datetime.datetime.utcnow()
+    for dt in (current_utc_datetime, current_utc_datetime + datetime.timedelta(days=1)):
+        formatted_path = dt.strftime(path_pattern)
+        dir_to_create = Path(formatted_path).parent
+        dir_to_create.mkdir(parents=True, exist_ok=True)
+
+
 def start_process(rtsp_url: str, save_path: str, segment_time: int) -> subprocess.Popen:
+    # Before starting process create dir for current and next day
+    # Other folders will be created inside loop that checks process status
+    create_utc_datetime_dirs(save_path)
+
     # TODO pass stimeout as variable
     cmd = (
         f"ffmpeg -hide_banner -y -loglevel error -rtsp_transport tcp "
@@ -126,6 +145,8 @@ if __name__ == '__main__':
                 logging.info(f'Restart process for {cam_name}...')
                 process = start_process(rtsp_url, save_path, SEGMENT_TIME)  # Restart the process
                 processes[idx] = (process, cam_name, rtsp_url, save_path)
+            create_utc_datetime_dirs(save_path)
+
         time.sleep(SLEEP_TIME)
 
     logging.info("Script terminated gracefully.")
