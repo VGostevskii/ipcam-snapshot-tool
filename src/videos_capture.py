@@ -109,8 +109,8 @@ if __name__ == '__main__':
     signal.signal(signal.SIGTERM, signal_handler)
 
     # Init rtsp stream capturing processes for each IP cam
+    logging.info('Start processes.')
     processes = []
-
     unique_paths = set()
     for cam_capture_config in config["CamsConfig"]:
         cam_name = cam_capture_config['cam_name']
