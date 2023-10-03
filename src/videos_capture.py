@@ -104,6 +104,7 @@ if __name__ == '__main__':
             logging.error("Duplicated save_path for {cam_name}. Check config. Skipping...")
             continue
 
+        logging.info(f'Start process for {cam_name}...')
         process = start_process(rtsp_url, save_path, SEGMENT_TIME)
         processes.append((process, cam_name, rtsp_url, save_path))
 
@@ -122,6 +123,7 @@ if __name__ == '__main__':
                                    f"FFmpeg Error Output:\n{stderr_output}"))
                 else:
                     logging.info(f"Process for {cam_name} has terminated gracefully.")
+                logging.info(f'Restart process for {cam_name}...')
                 process = start_process(rtsp_url, save_path, SEGMENT_TIME)  # Restart the process
                 processes[idx] = (process, cam_name, rtsp_url, save_path)
         time.sleep(SLEEP_TIME)
