@@ -20,6 +20,7 @@
   "Settings": {
     "segment_time": 3600,
     "sleep_time": 10,
+    "heartbeat_time": 3600,
     "log_path": "camera_recording.log"
   }
 }
