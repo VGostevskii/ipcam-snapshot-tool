@@ -104,6 +104,7 @@ if __name__ == '__main__':
     setup_logging(LOG_PATH)
     SEGMENT_TIME = int(config["Settings"].get("segment_time"))
     SLEEP_TIME = int(config["Settings"].get("sleep_time"))
+    HEARTBEAT_TIME = int(config["Settings"].get("heartbeat_time"))
 
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
@@ -131,6 +132,7 @@ if __name__ == '__main__':
     # For each process check if it has been terminated
     # log errors and restart
     running = True
+    last_heartbeat = time.time()
     while running:
         for idx, (process, cam_name, rtsp_url, save_path) in enumerate(processes):
             return_code = process.poll()
@@ -147,6 +149,10 @@ if __name__ == '__main__':
                 process = start_process(rtsp_url, save_path, SEGMENT_TIME)  # Restart the process
                 processes[idx] = (process, cam_name, rtsp_url, save_path)
             create_utc_datetime_dirs(save_path)
+
+        # Log that process is alive (it is usefull for zabbix log trigger)
+        if time.time() - last_heartbeat > HEARTBEAT_TIME:
+            logging.info('Processes statuses have checked')
 
         time.sleep(SLEEP_TIME)
 
