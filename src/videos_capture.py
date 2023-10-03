@@ -30,7 +30,8 @@ def read_json_config(config_path: os.PathLike) -> dict:
 
 def setup_logging(log_path: os.PathLike) -> None:
     logging.basicConfig(filename=log_path, level=logging.INFO,
-                        format='%(asctime)s - %(levelname)s - %(message)s')
+                        format='%(asctime)s - %(levelname)s - %(message)s',
+                        datefmt='%Y-%m-%d %H:%M:%S')
 
 
 def signal_handler(signum: int, frame: FrameType) -> None:
