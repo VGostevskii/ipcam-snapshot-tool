@@ -153,6 +153,7 @@ if __name__ == '__main__':
         # Log that process is alive (it is usefull for zabbix log trigger)
         if time.time() - last_heartbeat > HEARTBEAT_TIME:
             logging.info('Processes statuses have checked')
+            last_heartbeat = time.time()
 
         time.sleep(SLEEP_TIME)
 
